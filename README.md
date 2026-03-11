@@ -1,62 +1,23 @@
 # s1mple-web-vuln-scanner
-s1mple-web-vuln-scanner 是一个使用 Python 开发的轻量级 Web 漏洞扫描工具，用于自动化检测常见 Web 安全漏洞。
+S1mple-Web-Scan一款基于插件化架构的轻量级 Web 自动化渗透测试原型逻辑实现
 
-该项目主要用于安全学习与实践，通过模拟真实渗透测试中的信息收集与漏洞检测流程，实现对目标 Web 应用的基础安全检测能力。
+0x01 项目深度背景在现代 DevSecOps 流程中，自动化漏洞扫描是安全左移的关键。本项目是对自动化扫描器底层逻辑的复现与思考。通过本项目，我深入研究了：爬虫去噪与规范化逻辑（URL Normalization）。无回显漏洞的判定算法（基于时间差异分析的检测模型）。插件化解耦设计（面向对象多态在扫描引擎中的应用）。
 
-当前版本主要支持对常见 Web 漏洞的检测，例如：
+0x02 核心技术架构项目采用“生产-消费”模型思想，将资产搜集与漏洞检测彻底解耦：Core Engine (调度中心)：负责协调 Reporter、Crawler 与 Plugin 之间的数据流转，采用接口抽象化设计。Asset Crawler (资产引擎)：Context-Aware：支持对 <form>、<input>、<textarea> 等多种交互元素的深度解析。Same-Origin Policy：严格限制扫描范围，防止请求越权至第三方域名。Vulnerability Plugins (检测算子)：SQLi Detector：实现 Error-based 与 Time-based (TDA) 双重检测。XSS Detector：基于响应流的回显匹配算法，支持 Context 语义分析。Path Discovery：基于非重定向（allow_redirects=False）状态码判定的隐蔽扫描。
 
-SQL 注入（SQL Injection）
+0x03 技术难点攻克：TDA 检测模型针对 SQL 盲注，本项目放弃了传统的单一延时判定，引入了 TDA 时间差异分析：基准线测定：首先发送 sleep(0) 获取当前网络抖动下的基础响应时延 $T_{base}$。偏移量对比：注入 sleep(5) Payload，获取 $T_{target}$。判定公式：当 $T_{target} - T_{base} \ge 5$ 且连续三次波动率 $< 15\%$ 时，判定为高危注入。0x04 规范化报告输出 (JSON)为了适配大厂的安全流水线逻辑，本工具支持结构化 JSON 输出，方便与 SOC 平台或 Jira 系统集成。
+{
+  "vul_type": "SQL Injection (Time-based)",
+  "url": "http://example.com/api/user",
+  "payload": "sleep(5)",
+  "description": "检测到时间盲注，基准延迟 0.1s，注入延迟 5.1s",
+  "timestamp": "2024-03-20 22:00:00"
+}
 
-XSS（跨站脚本攻击）
+0x05 快速复现Bash#
+克隆仓库
+git clone https://github.com/your-id/sentinel-scanner.git
 
-常见敏感路径扫描
 
-基础信息收集
 
-本项目旨在帮助安全学习者理解 Web 漏洞扫描器的基本实现原理，并提升安全开发与攻防实践能力。
 
-功能特性
-
-🔍 目标信息探测
-
-自动识别网站状态码
-
-获取页面标题（Title）
-
-基础页面内容分析
-
-💉 SQL 注入检测
-
-基于 Payload 注入测试
-
-根据返回内容判断异常
-
-⚡ XSS 漏洞检测
-
-自动构造 XSS Payload
-
-检测反射型 XSS
-
-📂 敏感路径扫描
-
-扫描常见后台路径
-
-常见敏感文件检测
-
-🧠 模块化设计
-
-方便扩展新的漏洞检测模块
-
-技术栈
-
-项目主要使用以下技术实现：
-
-Python 3
-
-requests —— HTTP 请求发送
-
-BeautifulSoup —— 页面解析
-
-argparse —— 命令行参数解析
-
-threading —— 多线程扫描
