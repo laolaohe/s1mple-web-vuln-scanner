@@ -88,21 +88,8 @@ duration = time.time() - start_time
 
 输出文件：
 my_scan_report.json
-项目结构
-web-vuln-scanner
-│
-├── main.py                 # 主程序入口
-│
-├── core
-│   ├── crawler.py          # 网站爬虫
-│   ├── engine.py           # 扫描引擎
-│   └── reporter.py         # 报告模块
-│
-├── plugins
-│   ├── base.py             # 插件基类
-│   ├── sql_scan.py         # SQL 注入扫描
-│   ├── xss_scan.py         # XSS 扫描
-│   └── dir_scan.py         # 目录扫描
+<img width="349" height="342" alt="image" src="https://github.com/user-attachments/assets/ebcdbe3d-7d5b-465d-9cbe-1a62b8eb3c15" />
+
 
 
 
