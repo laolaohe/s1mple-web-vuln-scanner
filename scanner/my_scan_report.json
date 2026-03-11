@@ -1,0 +1,9 @@
+[
+    {
+        "timestamp": "2026-03-11 10:44:36",
+        "type": "敏感路径泄露",
+        "url": "https://www.ruankao.org.cn/admin",
+        "payload": "/admin",
+        "description": "发现敏感路径，响应码: 301"
+    }
+]
