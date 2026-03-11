@@ -1,22 +1,108 @@
 # s1mple-web-vuln-scanner
-S1mple-Web-Scan一款基于插件化架构的轻量级 Web 自动化渗透测试原型逻辑实现
+一个基于 Python 实现的轻量级 Web 漏洞扫描器，通过爬虫收集站点信息，并利用插件化扫描模块检测常见 Web 安全漏洞。
+该工具实现了从 信息收集 → 漏洞检测 → 报告生成 的完整流程，适合用于学习 Web 安全扫描原理以及安全工具开发。
 
-0x01 项目深度背景在现代 DevSecOps 流程中，自动化漏洞扫描是安全左移的关键。本项目是对自动化扫描器底层逻辑的复现与思考。通过本项目，我深入研究了：爬虫去噪与规范化逻辑（URL Normalization）。无回显漏洞的判定算法（基于时间差异分析的检测模型）。插件化解耦设计（面向对象多态在扫描引擎中的应用）。
+项目功能
+1 网站爬虫（Crawler）
+自动爬取目标网站页面并提取：页面链接（Links）/表单信息（Forms）
+特性：
+同域名限制，避免爬取外部站点
+深度限制防止死循环
+自动解析 HTML 表单
+自动提取 GET / POST 参数
+使用库：
+requests
+BeautifulSoup
 
-0x02 核心技术架构项目采用“生产-消费”模型思想，将资产搜集与漏洞检测彻底解耦：Core Engine (调度中心)：负责协调 Reporter、Crawler 与 Plugin 之间的数据流转，采用接口抽象化设计。Asset Crawler (资产引擎)：Context-Aware：支持对 <form>、<input>、<textarea> 等多种交互元素的深度解析。Same-Origin Policy：严格限制扫描范围，防止请求越权至第三方域名。Vulnerability Plugins (检测算子)：SQLi Detector：实现 Error-based 与 Time-based (TDA) 双重检测。XSS Detector：基于响应流的回显匹配算法，支持 Context 语义分析。Path Discovery：基于非重定向（allow_redirects=False）状态码判定的隐蔽扫描。
+2 漏洞扫描引擎（Scanner Engine）
+扫描引擎负责：
+调度所有扫描插件
+对 URL 和表单进行分类扫描
+统一管理漏洞结果
+支持插件化设计：
 
-0x03 技术难点攻克：TDA 检测模型针对 SQL 盲注，本项目放弃了传统的单一延时判定，引入了 TDA 时间差异分析：基准线测定：首先发送 sleep(0) 获取当前网络抖动下的基础响应时延 $T_{base}$。偏移量对比：注入 sleep(5) Payload，获取 $T_{target}$。判定公式：当 $T_{target} - T_{base} \ge 5$ 且连续三次波动率 $< 15\%$ 时，判定为高危注入。0x04 规范化报告输出 (JSON)为了适配大厂的安全流水线逻辑，本工具支持结构化 JSON 输出，方便与 SOC 平台或 Jira 系统集成。
-{
-  "vul_type": "SQL Injection (Time-based)",
-  "url": "http://example.com/api/user",
-  "payload": "sleep(5)",
-  "description": "检测到时间盲注，基准延迟 0.1s，注入延迟 5.1s",
-  "timestamp": "2024-03-20 22:00:00"
-}
+ScannerEngine
+│
+├── SQL Injection Scanner
+├── XSS Scanner
+└── Directory Scanner
 
-0x05 快速复现Bash#
-克隆仓库
-git clone https://github.com/your-id/sentinel-scanner.git
+已实现漏洞检测
+1 SQL Injection 扫描
+检测方式：
+Error-Based SQL Injection
+通过 Payload 触发数据库错误信息，例如：
+
+'
+"
+' OR 1=1--
+
+检测响应中是否出现：
+SQL syntax
+mysql_fetch
+如果出现则可能存在 SQL 注入漏洞。
+
+Time-Based SQL Injection
+使用 Payload：
+sleep(5)
+如果服务器响应时间 ≥ 5 秒，则可能存在时间盲注。
+
+实现原理：
+start_time = time.time()
+requests.get(...)
+duration = time.time() - start_time
+2 XSS 漏洞扫描
+原理：
+向表单输入恶意 JavaScript Payload，例如：
+<script>alert(1)</script>
+如果 Payload 在响应页面中未被过滤，可能存在 反射型 XSS。
+
+3 敏感目录扫描
+使用简单字典扫描常见敏感路径：
+
+/admin
+/login
+/config
+/.git
+/backup
+/uploads
+/test
+
+通过 HTTP 状态码判断：200/301/403
+
+如果存在则记录为 敏感路径泄露。
+
+报告系统
+
+扫描结果会被记录到 Reporter 模块，并生成 JSON 报告。
+示例：
+[
+  {
+    "timestamp": "2026-03-10 14:32:11",
+    "type": "SQL Injection",
+    "url": "http://example.com/login",
+    "payload": "' OR 1=1--",
+    "description": "响应内容包含数据库语法错误关键字"
+  }
+]
+
+输出文件：
+my_scan_report.json
+项目结构
+web-vuln-scanner
+│
+├── main.py                 # 主程序入口
+│
+├── core
+│   ├── crawler.py          # 网站爬虫
+│   ├── engine.py           # 扫描引擎
+│   └── reporter.py         # 报告模块
+│
+├── plugins
+│   ├── base.py             # 插件基类
+│   ├── sql_scan.py         # SQL 注入扫描
+│   ├── xss_scan.py         # XSS 扫描
+│   └── dir_scan.py         # 目录扫描
 
 
 
